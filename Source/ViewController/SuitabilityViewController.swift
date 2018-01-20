@@ -28,6 +28,7 @@ class SuitabilityViewController: UIViewController, UITableViewDataSource, UITabl
 
     var answers = [String:Any]()
     var messages = [Message]()
+    var buttons: [Button]?
 
 
     override func viewDidLoad() {
@@ -45,6 +46,9 @@ class SuitabilityViewController: UIViewController, UITableViewDataSource, UITabl
         tableView.showsVerticalScrollIndicator = false
 
         sendMessageButton.addTarget(self, action: #selector(sendResponse), for: .touchUpInside)
+
+        button1.addTarget(self, action: #selector(answerButtonClicked(_:)), for: .touchUpInside)
+        button2.addTarget(self, action: #selector(answerButtonClicked(_:)), for: .touchUpInside)
 
     }
 
@@ -83,13 +87,39 @@ class SuitabilityViewController: UIViewController, UITableViewDataSource, UITabl
 
     @objc func sendResponse() {
         let message = Message(value: textField.text ?? "" , isUserMessage: true)
-        self.messages.append(message)
+        appendMessage(message)
         if let responseId = responseId {
             answers[responseId] = textField.text
             SuitabilityApi().message(id: responseId, answers: answers, completion: handleResponse)
             showInputField = false
             dismissKeyboard()
         }
+
+
+    }
+
+    @objc func answerButtonClicked (_ sender: UIButton) {
+        var message: Message!
+        var answer: String!
+        if sender.isEqual(button1) {
+            answer = buttons?[0].value
+            message = Message(value: buttons?[0].label ?? "" , isUserMessage: true)
+        } else if sender.isEqual(button2) {
+            answer = buttons?[1].value
+            message = Message(value: buttons?[1].label ?? "" , isUserMessage: true)
+        }
+
+        appendMessage(message)
+        if let responseId = responseId {
+            answers[responseId] = answer
+            SuitabilityApi().message(id: responseId, answers: answers, completion: handleResponse)
+            hideButtons()
+        }
+
+    }
+
+    func appendMessage(_ message: Message) {
+        self.messages.append(message)
         UIView.animate(withDuration: 0.1, animations: {
             self.tableView.beginUpdates()
             self.tableView.insertRows(at: [IndexPath(row: self.messages.count-1, section: 0)], with: .bottom)
@@ -97,7 +127,6 @@ class SuitabilityViewController: UIViewController, UITableViewDataSource, UITabl
             self.tableView.scrollToRow(at: IndexPath(row: self.messages.count-1, section: 0), at: .bottom , animated: true)
 
         })
-
     }
 
     func animateInputField (keyboardHeight: CGFloat = 0) {
@@ -133,14 +162,7 @@ class SuitabilityViewController: UIViewController, UITableViewDataSource, UITabl
         responseId = response.id
         for (index, message) in response.messages.enumerated() {
             DispatchQueue.main.asyncAfter(deadline: .now() + Double(index) * 0.7){
-                self.messages.append(message)
-                UIView.animate(withDuration: 0.05, animations: {
-                    self.tableView.beginUpdates()
-                    self.tableView.insertRows(at: [IndexPath(row: self.messages.count-1, section: 0)], with: .bottom)
-                    self.tableView.endUpdates()
-                    self.tableView.scrollToRow(at: IndexPath(row: self.messages.count-1, section: 0), at: .bottom , animated: true)
-
-                })
+                self.appendMessage(message)
             }
         }
         if (response.inputs.count > 0) {
@@ -155,6 +177,7 @@ class SuitabilityViewController: UIViewController, UITableViewDataSource, UITabl
         } else if (response.buttons.count >= 2) {
             button1.setTitle(response.buttons[0].label, for: .normal)
             button2.setTitle(response.buttons[1].label, for: .normal)
+            buttons = response.buttons
             DispatchQueue.main.asyncAfter(deadline: .now() + Double(response.messages.count) * 0.7){
                 self.showButtons()
             }
@@ -187,8 +210,6 @@ class SuitabilityViewController: UIViewController, UITableViewDataSource, UITabl
 
 
         return cell
-
-
     }
 
     func configureLayout() {
@@ -241,6 +262,8 @@ class SuitabilityViewController: UIViewController, UITableViewDataSource, UITabl
         inputContainer.layoutSubviews()
 
         let buttonContainer = UIView()
+        buttonContainer.backgroundColor = UIColor(red:0.94, green:0.94, blue:0.95, alpha:1.00)
+
         buttonContainer.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(buttonContainer)
 
@@ -271,10 +294,6 @@ class SuitabilityViewController: UIViewController, UITableViewDataSource, UITabl
 
         button1.bottomAnchor.constraint(equalTo: button2.topAnchor, constant: -1).isActive = true
         button1.heightAnchor.constraint(equalTo: button2.heightAnchor).isActive = true
-
-
-
-
     }
 
     override func viewDidLayoutSubviews() {

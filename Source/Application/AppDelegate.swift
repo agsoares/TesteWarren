@@ -19,7 +19,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
 
         let mainViewController = SuitabilityViewController()
-        window?.rootViewController = mainViewController
+
+
+        window?.rootViewController = UINavigationController(rootViewController: mainViewController)
         window?.makeKeyAndVisible()
         // Override point for customization after application launch.
         return true

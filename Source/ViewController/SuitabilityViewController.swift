@@ -52,17 +52,18 @@ class SuitabilityViewController: UIViewController, UITableViewDataSource, UITabl
         button1.addTarget(self, action: #selector(answerButtonClicked(_:)), for: .touchUpInside)
         button2.addTarget(self, action: #selector(answerButtonClicked(_:)), for: .touchUpInside)
 
+        SuitabilityApi().message(id: nil, answers: answers, completion: handleResponse)
+
+        self.configureLayout()
+
     }
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
 
-        SuitabilityApi().message(id: nil, answers: answers, completion: handleResponse)
-
         NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillAppear(_:)), name:NSNotification.Name.UIKeyboardWillShow, object: nil);
         NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillDisappear(_:)), name:NSNotification.Name.UIKeyboardWillHide, object: nil);
 
-        self.configureLayout()
     }
 
     override func viewWillDisappear(_ animated: Bool) {
@@ -88,13 +89,28 @@ class SuitabilityViewController: UIViewController, UITableViewDataSource, UITabl
     }
 
     @objc func sendResponse() {
-        let message = Message(value: textField.text ?? "" , isUserMessage: true)
+        if (textField.text?.count == 0) {
+            return
+        }
+
         if let responseId = responseId {
             answers[responseId] = textField.text
             SuitabilityApi().message(id: responseId, answers: answers, completion: handleResponse)
             showInputField = false
             dismissKeyboard()
         }
+        let message: Message!
+
+        if let response = response {
+            let regex = try! NSRegularExpression(pattern: "\\{\\{.+\\}\\}", options: [])
+            let range = NSRange(0..<response.utf16.count)
+            let value = regex.stringByReplacingMatches(in: response, options: [],
+                                                       range: range, withTemplate: answers[responseId!] as! String)
+            message = Message(value: value, isUserMessage: true)
+        } else {
+            message = Message(value: textField.text ?? "" , isUserMessage: true)
+        }
+
         appendMessage(message)
 
 
@@ -163,6 +179,7 @@ class SuitabilityViewController: UIViewController, UITableViewDataSource, UITabl
 
     func handleResponse(response: ResponseModel) {
         responseId = response.id
+
         for (index, message) in response.messages.enumerated() {
             DispatchQueue.main.asyncAfter(deadline: .now() + Double(index) * 0.7){
                 self.appendMessage(message)
@@ -170,11 +187,22 @@ class SuitabilityViewController: UIViewController, UITableViewDataSource, UITabl
         }
         if (response.responses.count > 0) {
             self.response = response.responses[0]
-            
+
         } else {
             self.response = nil
         }
-        if (response.inputs.count > 0) {
+        if (responseId == "final") {
+            DispatchQueue.global().asyncAfter(deadline: .now() + Double(response.messages.count) * 0.7){
+                SuitabilityApi().finish(answers: self.answers) { result in
+                    DispatchQueue.main.async {
+                        let resultViewController = ResultViewController()
+                        resultViewController.result = result
+                        self.present(resultViewController, animated: true, completion: nil)
+                    }
+                }
+            }
+
+        } else  if (response.inputs.count > 0) {
             let input = response.inputs[0]
             textField.keyboardType = input.keyboardType
             textField.text = nil
@@ -191,6 +219,7 @@ class SuitabilityViewController: UIViewController, UITableViewDataSource, UITabl
                 self.showButtons()
             }
         }
+
     }
 
 
@@ -222,10 +251,15 @@ class SuitabilityViewController: UIViewController, UITableViewDataSource, UITabl
     }
 
     func configureLayout() {
+        navigationController?.navigationBar.isTranslucent = false
+        navigationController?.navigationBar.barTintColor = UIColor(red:0.93, green:0.20, blue:0.37, alpha:1.00)
+        navigationController?.navigationBar.titleTextAttributes = [NSAttributedStringKey.foregroundColor : UIColor.white]
+        title = "DESCOBRINDO SEU PERFIL"
+
         view.backgroundColor = UIColor.white
         tableView.translatesAutoresizingMaskIntoConstraints = false
         tableView.separatorStyle = .none
-        tableView.contentInset = UIEdgeInsets(top: 0, left: 0, bottom: 100, right: 0)
+        tableView.contentInset = UIEdgeInsets(top: 50, left: 0, bottom: 100, right: 0)
 
         view.addSubview(tableView)
 
@@ -292,7 +326,6 @@ class SuitabilityViewController: UIViewController, UITableViewDataSource, UITabl
         button1.topAnchor.constraint(equalTo: buttonContainer.topAnchor).isActive = true
         button1.leadingAnchor.constraint(equalTo: buttonContainer.leadingAnchor).isActive = true
         button1.trailingAnchor.constraint(equalTo: buttonContainer.trailingAnchor).isActive = true
-
 
         button2.translatesAutoresizingMaskIntoConstraints = false
         buttonContainer.addSubview(button2)

@@ -30,4 +30,19 @@ class SuitabilityApi {
         }
     }
 
+    func finish (answers: [String: Any], completion: @escaping (ResultModel) -> () ) {
+        let parameters : Parameters = [
+            "answers": answers
+        ]
+
+
+        Alamofire.request(baseUrl + "api/v2/suitability/finish", method: .post, parameters: parameters, encoding: JSONEncoding.default)
+            .responseJSON { response in
+                if let result = Mapper<ResultModel>().map(JSONObject: response.result.value) {
+                    completion(result)
+                }
+
+        }
+    }
+
 }

@@ -48,6 +48,12 @@ struct Message: Mappable {
 
     mutating func mapping(map: Map) {
         value <- map["value"]
+        let regex = try! NSRegularExpression(pattern: "(\\^\\d+|.+<erase>)", options: [])
+        let range = NSRange(0..<value.utf16.count)
+        value = regex.stringByReplacingMatches(in: value, options: [],
+                                              range: range, withTemplate: "")
+
+
     }
 
 }
@@ -65,9 +71,11 @@ struct Input: Mappable {
         mask <- map["mask"]
         type <- map["type"]
 
-        switch type {
-        case "number":
+        switch (type, mask) {
+        case ("number", _):
             keyboardType = .numberPad
+        case (_, "email"):
+            keyboardType = .emailAddress
         default:
             keyboardType = .default
         }

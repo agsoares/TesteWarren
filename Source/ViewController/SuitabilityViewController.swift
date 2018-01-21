@@ -30,6 +30,8 @@ class SuitabilityViewController: UIViewController, UITableViewDataSource, UITabl
     var messages = [Message]()
     var buttons: [Button]?
 
+    var response: String?
+
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -87,13 +89,14 @@ class SuitabilityViewController: UIViewController, UITableViewDataSource, UITabl
 
     @objc func sendResponse() {
         let message = Message(value: textField.text ?? "" , isUserMessage: true)
-        appendMessage(message)
         if let responseId = responseId {
             answers[responseId] = textField.text
             SuitabilityApi().message(id: responseId, answers: answers, completion: handleResponse)
             showInputField = false
             dismissKeyboard()
         }
+        appendMessage(message)
+
 
 
     }
@@ -164,6 +167,12 @@ class SuitabilityViewController: UIViewController, UITableViewDataSource, UITabl
             DispatchQueue.main.asyncAfter(deadline: .now() + Double(index) * 0.7){
                 self.appendMessage(message)
             }
+        }
+        if (response.responses.count > 0) {
+            self.response = response.responses[0]
+            
+        } else {
+            self.response = nil
         }
         if (response.inputs.count > 0) {
             let input = response.inputs[0]

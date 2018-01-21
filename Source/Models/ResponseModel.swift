@@ -15,6 +15,7 @@ class ResponseModel: Mappable {
     var buttons: [Button]!
     var messages: [Message]!
     var inputs: [Input]!
+    var responses: [String]!
 
 
     required init?(map: Map) {
@@ -26,6 +27,7 @@ class ResponseModel: Mappable {
         buttons <- map["buttons"]
         messages <- map["messages"]
         inputs <- map ["inputs"]
+        responses <- map ["responses"]
 
     }
 

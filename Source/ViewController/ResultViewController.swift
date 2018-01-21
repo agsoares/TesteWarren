@@ -20,7 +20,7 @@ class ResultViewController: UIViewController {
     override func viewDidLoad() {
         youProfireIs.text = "O SEU PERFIL É"
 
-        profileLabel.text = result?.profileType ?? "Passivo"
+        profileLabel.text = result?.profileType
 
     }
 

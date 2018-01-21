@@ -34,8 +34,8 @@ class ResultModel: Mappable {
 
     func mapping(map: Map) {
         name <- map["name"]
-        computedRisk <- map["investmentProfile.computedProfileType"]
-        profileType <- map["investmentProfile.computedRiskTolerance"]
+        computedRisk <- map["user.investmentProfile.computedRiskTolerance"]
+        profileType <- map["user.investmentProfile.computedProfileType"]
 
 
     }
